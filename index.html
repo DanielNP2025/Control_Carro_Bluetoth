@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carro ESP32</title>
+<style>
+body{
+  text-align:center;
+  font-family:Arial;
+  background:#111;
+  color:white;
+}
+button{
+  font-size:20px;
+  padding:15px 25px;
+  margin:10px;
+  border:none;
+  border-radius:10px;
+}
+#connect{background:green;color:white;}
+#stop{background:red;color:white;}
+#joystick{
+  width:200px;
+  height:200px;
+  background:#333;
+  border-radius:50%;
+  margin:20px auto;
+  position:relative;
+}
+#stick{
+  width:60px;
+  height:60px;
+  background:#00ccff;
+  border-radius:50%;
+  position:absolute;
+  top:70px;
+  left:70px;
+}
+</style>
+</head>
+<body>
+
+<h2>🚗 Carro ESP32</h2>
+
+<button id="connect">Conectar</button>
+<button id="stop">STOP</button>
+
+<div id="joystick">
+  <div id="stick"></div>
+</div>
+
+<script>
+let device, characteristic;
+
+document.getElementById("connect").onclick = async () => {
+  device = await navigator.bluetooth.requestDevice({
+    filters: [{ name: "CarroESP32" }],
+    optionalServices: ["12345678-1234-1234-1234-1234567890ab"]
+  });
+
+  const server = await device.gatt.connect();
+  const service = await server.getPrimaryService("12345678-1234-1234-1234-1234567890ab");
+  characteristic = await service.getCharacteristic("abcdefab-1234-1234-1234-abcdefabcdef");
+
+  alert("Conectado!");
+};
+
+function send(text){
+  if(!characteristic) return;
+  let encoder = new TextEncoder();
+  characteristic.writeValue(encoder.encode(text));
+}
+
+document.getElementById("stop").onclick = () => send("S");
+
+let stick = document.getElementById("stick");
+let joystick = document.getElementById("joystick");
+
+joystick.addEventListener("touchmove", function(e){
+  e.preventDefault();
+  let rect = joystick.getBoundingClientRect();
+  let x = e.touches[0].clientX - rect.left - 100;
+  let y = e.touches[0].clientY - rect.top - 100;
+
+  let max = 80;
+  x = Math.max(-max, Math.min(max, x));
+  y = Math.max(-max, Math.min(max, y));
+
+  stick.style.left = (x + 100 - 30) + "px";
+  stick.style.top = (y + 100 - 30) + "px";
+
+  let velocidad = Math.min(255, Math.abs(y)*3);
+
+  if(y < -20) send("F"+velocidad);
+  else if(y > 20) send("B"+velocidad);
+  else if(x < -20) send("L"+velocidad);
+  else if(x > 20) send("R"+velocidad);
+});
+
+joystick.addEventListener("touchend", function(){
+  stick.style.left = "70px";
+  stick.style.top = "70px";
+  send("S");
+});
+</script>
+
+</body>
+</html>
