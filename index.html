@@ -2,67 +2,123 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Carro ESP32</title>
+<title>Carro Gamer</title>
+
 <style>
 body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
   text-align:center;
-  font-family:Arial;
-  background:#111;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #000 80%);
   color:white;
 }
+
+h1{
+  margin-top:20px;
+  font-size:28px;
+  text-shadow:0 0 15px cyan;
+}
+
 button{
-  font-size:20px;
-  padding:15px 25px;
+  padding:15px 30px;
+  font-size:18px;
   margin:10px;
   border:none;
-  border-radius:10px;
+  border-radius:12px;
+  cursor:pointer;
+  transition:0.3s;
 }
-#connect{background:green;color:white;}
-#stop{background:red;color:white;}
+
+#connect{
+  background:#00ff99;
+  box-shadow:0 0 20px #00ff99;
+}
+
+#connect:hover{
+  background:#00cc77;
+}
+
+#stop{
+  background:#ff0033;
+  box-shadow:0 0 25px red;
+}
+
+#status{
+  margin-top:10px;
+  font-size:16px;
+  color:#00ffcc;
+}
+
 #joystick{
-  width:200px;
-  height:200px;
-  background:#333;
+  width:250px;
+  height:250px;
+  background:#111;
   border-radius:50%;
-  margin:20px auto;
+  margin:30px auto;
   position:relative;
+  box-shadow:0 0 40px cyan inset, 0 0 20px cyan;
 }
+
 #stick{
-  width:60px;
-  height:60px;
-  background:#00ccff;
+  width:80px;
+  height:80px;
+  background:cyan;
   border-radius:50%;
   position:absolute;
-  top:70px;
-  left:70px;
+  top:85px;
+  left:85px;
+  box-shadow:0 0 30px cyan;
+  transition:0.05s;
+}
+
+footer{
+  margin-top:30px;
+  font-size:14px;
+  color:gray;
 }
 </style>
 </head>
+
 <body>
 
-<h2>🚗 Carro ESP32</h2>
+<h1>🎮 CARRO ESP32 GAMER</h1>
 
-<button id="connect">Conectar</button>
-<button id="stop">STOP</button>
+<button id="connect">🔗 Conectar</button>
+<button id="stop">🛑 STOP</button>
+
+<div id="status">Desconectado</div>
 
 <div id="joystick">
   <div id="stick"></div>
 </div>
 
+<footer>
+Proyecto Daniel Nicolás 🚗🔥
+</footer>
+
 <script>
 let device, characteristic;
 
+const SERVICE_UUID = "12345678-1234-1234-1234-1234567890ab";
+const CHAR_UUID = "abcdefab-1234-1234-1234-abcdefabcdef";
+
 document.getElementById("connect").onclick = async () => {
-  device = await navigator.bluetooth.requestDevice({
-    filters: [{ name: "CarroESP32" }],
-    optionalServices: ["12345678-1234-1234-1234-1234567890ab"]
-  });
+  try{
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: "CarroESP32" }],
+      optionalServices: [SERVICE_UUID]
+    });
 
-  const server = await device.gatt.connect();
-  const service = await server.getPrimaryService("12345678-1234-1234-1234-1234567890ab");
-  characteristic = await service.getCharacteristic("abcdefab-1234-1234-1234-abcdefabcdef");
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    characteristic = await service.getCharacteristic(CHAR_UUID);
 
-  alert("Conectado!");
+    document.getElementById("status").innerHTML = "🟢 Conectado";
+    document.getElementById("status").style.color = "#00ff99";
+  }
+  catch(error){
+    alert("Error de conexión");
+  }
 };
 
 function send(text){
@@ -79,27 +135,27 @@ let joystick = document.getElementById("joystick");
 joystick.addEventListener("touchmove", function(e){
   e.preventDefault();
   let rect = joystick.getBoundingClientRect();
-  let x = e.touches[0].clientX - rect.left - 100;
-  let y = e.touches[0].clientY - rect.top - 100;
+  let x = e.touches[0].clientX - rect.left - 125;
+  let y = e.touches[0].clientY - rect.top - 125;
 
-  let max = 80;
+  let max = 100;
   x = Math.max(-max, Math.min(max, x));
   y = Math.max(-max, Math.min(max, y));
 
-  stick.style.left = (x + 100 - 30) + "px";
-  stick.style.top = (y + 100 - 30) + "px";
+  stick.style.left = (x + 125 - 40) + "px";
+  stick.style.top = (y + 125 - 40) + "px";
 
-  let velocidad = Math.min(255, Math.abs(y)*3);
+  let velocidad = Math.min(255, Math.abs(y)*2.5);
 
-  if(y < -20) send("F"+velocidad);
-  else if(y > 20) send("B"+velocidad);
-  else if(x < -20) send("L"+velocidad);
-  else if(x > 20) send("R"+velocidad);
+  if(y < -20) send("F"+parseInt(velocidad));
+  else if(y > 20) send("B"+parseInt(velocidad));
+  else if(x < -20) send("L"+parseInt(velocidad));
+  else if(x > 20) send("R"+parseInt(velocidad));
 });
 
 joystick.addEventListener("touchend", function(){
-  stick.style.left = "70px";
-  stick.style.top = "70px";
+  stick.style.left = "85px";
+  stick.style.top = "85px";
   send("S");
 });
 </script>
